@@ -1,4 +1,5 @@
 # English Robot Voice Assistant (Rust, native desktop)
+![English Robot Voice Assistant screenshot](screenshot.png)
 
 Press SPACE, speak, press SPACE again. The robot transcribes you (Whisper), asks your
 Ollama model `ada-en`, speaks the answer with `en-GB-RyanNeural`, and plays its
