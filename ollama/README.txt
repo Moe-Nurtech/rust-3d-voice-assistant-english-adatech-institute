@@ -1,0 +1,1 @@
+ollama create ada-en -f ./Modelfile
