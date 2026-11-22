@@ -271,10 +271,17 @@ fn speak(handle: &rodio::OutputStreamHandle, tx: &Sender<Ev>, text: &str, cached
     audio::robot_effect(&mut pcm, channels, sample_rate, 0.3);
 
     let _ = tx.send(Ev::Status("Status: Speaking (British male voice)...".into()));
+    // forget any old STOP click, then show the Talking state (which shows the STOP button)
+    audio::STOP_SPEECH.store(false, std::sync::atomic::Ordering::SeqCst);
     let _ = tx.send(Ev::State(RobotState::Talking));
     // playbackRate 0.97 in the web version -> play slightly slower/lower
-    audio::play(handle, pcm, channels, (sample_rate as f32 * 0.97) as u32)?;
-    let _ = tx.send(Ev::Status("Status: Finished! Click the mic or press SPACE to talk again".into()));
+    let stopped = audio::play(handle, pcm, channels, (sample_rate as f32 * 0.97) as u32)?;
+    let msg = if stopped {
+        "Status: Stopped. Click the mic or press SPACE to talk"
+    } else {
+        "Status: Finished! Click the mic or press SPACE to talk again"
+    };
+    let _ = tx.send(Ev::Status(msg.into()));
     Ok(())
 }
 
@@ -337,7 +344,7 @@ fn transcribe(state: &mut WhisperState, audio16k: &[f32]) -> Result<String> {
     params.set_single_segment(true);
     params.set_no_context(true);
     params.set_suppress_blank(true);
-    //params.set_temperature_inc(0.0);
+    // (removed set_temperature_inc(0.0): it stopped Whisper from retrying poor decodes and hurt accuracy)
     params.set_n_threads(6);
 
     state.full(params, audio16k).map_err(|e| anyhow!("Whisper: {e}"))?;
